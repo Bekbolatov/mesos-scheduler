@@ -1,8 +1,8 @@
 package com.sparkydots.mesos.example
 
-import akka.actor.{Actor, ActorSystem, Props}
-import com.sparkydots.mesos.framework.executor.{ExecutorActor, LoggingMesosExecutor}
-import com.typesafe.scalalogging.LazyLogging
+import akka.actor.{ActorSystem, Props}
+import com.sparkydots.mesos.framework.executor.ExecutorActor
+import com.sparkydots.mesos.framework.logging.LoggingMesosExecutor
 import org.apache.mesos.Protos._
 import org.apache.mesos.{ExecutorDriver, MesosExecutorDriver}
 
@@ -22,7 +22,6 @@ class BasicExecutor(poolSize: Int = 5) extends LoggingMesosExecutor {
   }
 
 }
-
 
 
 object BasicExecutor {

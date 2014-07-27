@@ -1,27 +1,62 @@
-package com.sparkydots.mesos.framework.scheduler
+package com.sparkydots.mesos.framework.scheduler.akka
 
 import akka.actor.Actor
 import com.google.common.collect.Lists
 import com.google.protobuf.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.mesos.Protos._
-import org.apache.mesos.SchedulerDriver
+import org.apache.mesos.{MesosSchedulerDriver, Scheduler, SchedulerDriver}
 
 import scala.collection.mutable
 
 /**
+ * Wraps MesosScheduler and the driver through Akka Actor, allowing for succinct task management
  * @author Renat Bekbolatov (renatb@sparkydots.com) 7/26/14 9:09 PM
  */
 
-case class TaskDataEntry(taskInfo: TaskInfo, tries: Int, originalDescription: String)
-
 class SchedulerActor extends Actor with LazyLogging {
 
-  val MAX_TRIES = 3
-  val taskQueue = new mutable.Queue[Tuple2[String, String]]
-  var currentExecutorInfo: Option[ExecutorInfo] = None
+  def receive: Receive = {
+    case Initialize(executorInfo, frameworkName, masterAddress) =>
+      initialize(executorInfo, frameworkName, masterAddress)
+    case StopDriver(failover) =>
+      stopDriver(failover)
+    case SetMaxTries(newMaxTries) =>
+      maxTries = newMaxTries
+    case NewTask(taskDescription, id) =>
+      addNewTask(taskDescription, id)
+    case ResourceOffers(driver, offers) =>
+      processOffers(driver, offers)
+    case StatusUpdate(driver, status) =>
+      processStatusUpdate(driver, status)
+    case _ =>
+      logger warn "no message matched"
+  }
 
-  val activeTasks = new mutable.HashMap[String, TaskDataEntry]
+  case class ActiveTask(taskInfo: TaskInfo, tries: Int, originalDescription: String)
+  val taskQueue = new mutable.Queue[Tuple2[String, String]]
+  val activeTasks = new mutable.HashMap[String, ActiveTask]
+
+  var maxTries = 3
+  var activeExecutor: Option[ExecutorInfo] = None
+  var scheduler: Option[Scheduler] = None
+  var frameworkInfo: Option[FrameworkInfo] = None
+  val schedulerDriverManager = new SchedulerDriverManager
+
+
+
+
+  def initialize(executorInfo: ExecutorInfo, frameworkName: String, masterAddress: String) {
+    activeExecutor = Some(executorInfo)
+    scheduler = Some(new ActorMesosScheduler(self))
+    frameworkInfo = Some(FrameworkInfo.newBuilder().setUser("").setName(frameworkName).build())
+    schedulerDriverManager.init(scheduler.get, frameworkInfo.get, masterAddress)
+    schedulerDriverManager.run()
+  }
+
+  def stopDriver(failover: Boolean) {
+    schedulerDriverManager.stop(failover)
+  }
 
   def processStatusUpdate(driver: SchedulerDriver, status: TaskStatus) {
     val taskId = status.getTaskId.getValue
@@ -35,11 +70,11 @@ class SchedulerActor extends Actor with LazyLogging {
         activeTasks.remove(commonTaskId)
         return
       }
-      if (activeTaskLine.get.tries < MAX_TRIES) {
+      if (activeTaskLine.get.tries < maxTries) {
         addNewTask(activeTaskLine.get.originalDescription, commonTaskId)
       } else {
         activeTasks.remove(commonTaskId)
-        logger error("task {} could not complete after {} retries", commonTaskId, MAX_TRIES.toString)
+        logger error("task {} could not complete after {} retries", commonTaskId, maxTries.toString)
       }
     } else if (state == TaskState.TASK_FINISHED) {
       activeTasks.remove(commonTaskId)
@@ -54,19 +89,6 @@ class SchedulerActor extends Actor with LazyLogging {
       state == TaskState.TASK_LOST
   }
 
-  def receive: Receive = {
-    case NewExecutorInfo(executorInfo) =>
-      currentExecutorInfo = Some(executorInfo)
-    case NewTask(taskDescription, id) =>
-      addNewTask(taskDescription, id)
-    case ResourceOffers(driver, offers) =>
-      processOffers(driver, offers)
-    case StatusUpdate(driver, status) =>
-      processStatusUpdate(driver, status)
-    case _ =>
-      logger warn "no message matched"
-
-  }
 
 
   def addNewTask(taskDescription: String, baseTaskId: String) {
@@ -85,7 +107,7 @@ class SchedulerActor extends Actor with LazyLogging {
     val activeTask = activeTasks.get(common)
     if (activeTask.nonEmpty) {
       val count = activeTask.get.tries
-      if (count > MAX_TRIES) {
+      if (count > maxTries) {
         None
       } else {
         Some(Tuple2(common + "-" + (count + 1), count))
@@ -98,11 +120,11 @@ class SchedulerActor extends Actor with LazyLogging {
   def launchTask(driver: SchedulerDriver, offer: Offer, taskData: Tuple2[String, String]) {
     val newId = makeNewTaskId(taskData._2)
     if (newId.nonEmpty) {
-      val taskInfo = createTask(offer, currentExecutorInfo.get, newId.get._1, taskData._1)
+      val taskInfo = createTask(offer, activeExecutor.get, newId.get._1, taskData._1)
       val filters = Filters.newBuilder().setRefuseSeconds(1).build()
       driver.launchTasks(Lists.newArrayList(offer.getId), Lists.newArrayList(taskInfo), filters)
 
-      activeTasks += (taskInfo.getTaskId.getValue -> TaskDataEntry(taskInfo, newId.get._2 + 1, taskData._1))
+      activeTasks += (taskInfo.getTaskId.getValue -> ActiveTask(taskInfo, newId.get._2 + 1, taskData._1))
       logger info("launching task {}", newId)
     } else {
       driver.declineOffer(offer.getId)
@@ -117,7 +139,7 @@ class SchedulerActor extends Actor with LazyLogging {
       if (nextTask.isEmpty) {
         logger debug "declining offer"
         driver.declineOffer(offer.getId)
-      } else if (currentExecutorInfo.nonEmpty) {
+      } else if (activeExecutor.nonEmpty) {
         launchTask(driver, offer, nextTask.get)
       } else {
         logger warn "executor info is not set"

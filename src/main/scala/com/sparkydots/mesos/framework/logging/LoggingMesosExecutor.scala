@@ -1,9 +1,13 @@
-package com.sparkydots.mesos.framework.executor
+package com.sparkydots.mesos.framework.logging
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.mesos.Protos._
 import org.apache.mesos.{Executor, ExecutorDriver}
 
+/**
+ * Executor with logging pre-wired
+ * @author Renat Bekbolatov (renatb@sparkydots.com) 7/27/14 12:56 PM
+ */
 trait LoggingMesosExecutor extends Executor with LazyLogging {
 
 

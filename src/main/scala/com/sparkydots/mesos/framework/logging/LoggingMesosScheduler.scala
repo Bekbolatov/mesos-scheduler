@@ -1,4 +1,4 @@
-package com.sparkydots.mesos.framework.scheduler
+package com.sparkydots.mesos.framework.logging
 
 import java.util
 
@@ -6,6 +6,10 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.mesos.Protos._
 import org.apache.mesos.{Scheduler, SchedulerDriver}
 
+/**
+ * Scheduler with logging pre-wired
+ * @author Renat Bekbolatov (renatb@sparkydots.com) 7/27/14 12:56 PM
+ */
 trait LoggingMesosScheduler extends Scheduler with LazyLogging {
 
   def registered(driver: SchedulerDriver, frameworkId: FrameworkID, masterInfo: MasterInfo) {
@@ -33,8 +37,6 @@ trait LoggingMesosScheduler extends Scheduler with LazyLogging {
     logger info "=============================== disconnected ==============================="
   }
 
-
-
   def frameworkMessage(driver: SchedulerDriver, executorId: ExecutorID, slaveId: SlaveID, data: Array[Byte]) {
     logger info "=============================== frameworkMessage ==============================="
     logger info s". executorId = $executorId"
@@ -45,8 +47,6 @@ trait LoggingMesosScheduler extends Scheduler with LazyLogging {
     logger info "=============================== statusUpdate ==============================="
     logger info s". status = $status"
   }
-
-
 
   def slaveLost(driver: SchedulerDriver, slaveId: SlaveID) {
     logger info "=============================== slaveLost ==============================="

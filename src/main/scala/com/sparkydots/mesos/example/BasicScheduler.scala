@@ -5,7 +5,8 @@ import java.util
 import akka.actor.Actor
 import com.google.common.collect.Lists
 import com.google.protobuf.ByteString
-import com.sparkydots.mesos.framework.scheduler._
+import com.sparkydots.mesos.framework.logging._
+import com.sparkydots.mesos.framework.scheduler.akka.SchedulerActor
 import org.apache.mesos.Protos._
 import org.apache.mesos.SchedulerDriver
 

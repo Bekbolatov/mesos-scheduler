@@ -8,7 +8,11 @@ import org.apache.mesos.Protos.TaskInfo
  */
 package object example {
 
-  object OptionsLocal {
+  class SchedulerOptions {
+    val frameworkName = "frameworkName"
+    val actorSystemName = "SchedulerActorSystem"
+    val actorName = "SchedulerActor"
+
     val masterAddress = "127.0.0.1:5050"
     val java = "/usr/bin/java"
     val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
@@ -16,27 +20,34 @@ package object example {
     val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
   }
 
-  object OptionsLocalScalaExecutor {
-    val masterAddress = "127.0.0.1:5050"
-    val java = "/usr/bin/java"
-    val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
-    val cp = "/Users/renatb/projects/90_scratch/Bekbolatov/mesos-scheduler/target/scala-2.11/mesos-scheduler-assembly-1.0.jar"
-    val executorRunner = "com.sparkydots.mesos.example.BasicExecutor"
+  object OptionsLocal extends SchedulerOptions {
+    override val masterAddress = "127.0.0.1:5050"
+    override val java = "/usr/bin/java"
+    override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
+    override val cp = "/Users/renatb/projects/90_scratch/NamesOnMesos/build/libs/NamesOnMesos-1.0.jar"
+    override val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
   }
 
-  object OptionsAWS {
-    val masterAddress = "awsserver.vicinitalk.com:5050"
+  object OptionsLocalScalaExecutor extends SchedulerOptions {
+    override val masterAddress = "127.0.0.1:5050"
+    override val java = "/usr/bin/java"
+    override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
+    override val cp = "/Users/renatb/projects/90_scratch/Bekbolatov/mesos-scheduler/target/scala-2.11/mesos-scheduler-assembly-1.0.jar"
+    override val executorRunner = "com.sparkydots.mesos.example.BasicExecutor"
+  }
+
+  object OptionsAWS extends SchedulerOptions {
+    override val masterAddress = "awsserver.vicinitalk.com:5050"
     //zk://awsserver.vicinitalk.com:2181/mesos2
-    val java = "/usr/bin/java"
-    val lib = "/usr/local/lib"
-    val cp = "/home/ubuntu/other/NamesOnMesos/build/libs/NamesOnMesos-1.0.jar"
-    val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
+    override val java = "/usr/bin/java"
+    override val lib = "/usr/local/lib"
+    override val cp = "/home/ubuntu/other/NamesOnMesos/build/libs/NamesOnMesos-1.0.jar"
+    override val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
+    override val frameworkName = "akkaFrameW"
   }
 
   abstract class Message
-
   case class SimpleMessage(message: String) extends Message
-
   case class TaskInfoMessage(driver: ExecutorDriver, taskInfo: TaskInfo) extends Message
 
 }

@@ -1,9 +1,7 @@
 package com.sparkydots.mesos.example
 
-import akka.actor.{Props, ActorSystem}
-import com.sparkydots.mesos.framework.executor.ExecutorActor
-import com.sparkydots.mesos.framework.scheduler.{NewTask, NewExecutorInfo, SchedulerActor}
-import org.apache.mesos.MesosSchedulerDriver
+import akka.actor.{ActorSystem, Props}
+import com.sparkydots.mesos.framework.scheduler.akka.{StopDriver, Initialize, NewTask, SchedulerActor}
 import org.apache.mesos.Protos._
 
 import scala.io.StdIn
@@ -11,33 +9,28 @@ import scala.io.StdIn
 
 object BasicSchedulerRunner extends App {
 
-  val eo = OptionsLocalScalaExecutor
+  def createExecutorInfo(options: SchedulerOptions,
+                         executorId: String = "executorDefault",
+                         executorName: String = "MyExecutor",
+                         executorSource: String = "originalSpawn"): ExecutorInfo = {
+    val commandInfo = CommandInfo.newBuilder()
+      .setValue(s"${options.java} -Djava.library.path=${options.lib} -classpath ${options.cp} ${options.executorRunner} ${options.masterAddress}")
 
-  val system = ActorSystem("SchedulerSystem")
-  val schedulerActor = system.actorOf(Props[SchedulerActor], "schedulerActor")
-
-  val commandInfo = CommandInfo.newBuilder()
-    .setValue(s"${eo.java} -Djava.library.path=${eo.lib} -classpath ${eo.cp} ${eo.executorRunner} ${eo.masterAddress}")
-  val executorInfo =
     ExecutorInfo.newBuilder()
-      .setExecutorId(ExecutorID.newBuilder().setValue("executorJacob"))
+      .setExecutorId(ExecutorID.newBuilder().setValue(executorId))
       .setCommand(commandInfo)
-      .setName("MyEXECUTOR")
-      .setSource("originalSpawn")
+      .setName(executorName)
+      .setSource(executorSource)
       .build()
-  schedulerActor ! NewExecutorInfo(executorInfo)
-
-  val scheduler = new com.sparkydots.mesos.framework.scheduler.ActorMesosScheduler(schedulerActor)
+  }
 
 
-  val frameworkInfo: FrameworkInfo = FrameworkInfo.newBuilder().setUser("").setName("ScalaActorFramework").build()
-  val schedulerDriver: MesosSchedulerDriver = new MesosSchedulerDriver(scheduler, frameworkInfo, eo.masterAddress)
+  val options =  OptionsLocal //OptionsAWS //
 
-  val schedulerDriverMainThread = new Thread() {
-    override def run() {
-      schedulerDriver.run()
-    }
-  }.start()
+  val system = ActorSystem(options.actorSystemName)
+  val schedulerActor = system.actorOf(Props[SchedulerActor], options.actorName)
+
+  schedulerActor ! Initialize(createExecutorInfo(options), options.frameworkName, options.masterAddress)
 
   var numTasks = 0
   var ok = true
@@ -53,19 +46,18 @@ object BasicSchedulerRunner extends App {
         case "re" =>
           println(tokens)
           if (tokens.length > 1)
-            schedulerActor !  NewTask(tokens(1), "id" + numTasks)
+            schedulerActor ! NewTask(tokens(1), "id" + numTasks)
         case _ =>
           println("_")
       }
     } else {
+      schedulerActor ! StopDriver()
+      system.shutdown()
       println("exiting...")
     }
     numTasks = numTasks + 1
   }
 
-  val status = if (schedulerDriver.stop() == Status.DRIVER_STOPPED) 0 else 1
-
-  sys.exit(status)
 }
 
 
