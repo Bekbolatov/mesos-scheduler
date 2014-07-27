@@ -12,32 +12,39 @@ import scala.collection.mutable
 /**
  * @author Renat Bekbolatov (renatb@sparkydots.com) 7/26/14 9:09 PM
  */
+
+case class TaskDataEntry(taskInfo: TaskInfo, tries: Int, originalDescription: String)
+
 class SchedulerActor extends Actor with LazyLogging {
 
   val MAX_TRIES = 3
   val taskQueue = new mutable.Queue[Tuple2[String, String]]
   var currentExecutorInfo: Option[ExecutorInfo] = None
 
-  val activeTasks = new mutable.HashMap[String, Tuple2[TaskInfo, Int]]
+  val activeTasks = new mutable.HashMap[String, TaskDataEntry]
 
   def processStatusUpdate(driver: SchedulerDriver, status: TaskStatus) {
     val taskId = status.getTaskId.getValue
     val commonTaskId = taskId.split("-")(0)
     val state = status.getState
 
-    if (state == TaskState.TASK_FINISHED) {
-      activeTasks.remove(commonTaskId)
-    }
-
-    val activeTaskLine = activeTasks.get(commonTaskId)
-
     if (badState(state)) {
-      val commonTaskId = taskId.split("-")(0)
-      val newName = makeNewTaskId(commonTaskId)
-      if (newName.nonEmpty) {
-
-        addNewTask(status.get, commonTaskId)
+      val activeTaskLine = activeTasks.get(commonTaskId)
+      if (activeTaskLine.isEmpty) {
+        logger error "expected a record of previous task launch"
+        activeTasks.remove(commonTaskId)
+        return
       }
+      if (activeTaskLine.get.tries < MAX_TRIES) {
+        addNewTask(activeTaskLine.get.originalDescription, commonTaskId)
+      } else {
+        activeTasks.remove(commonTaskId)
+        logger error("task {} could not complete after {} retries", commonTaskId, MAX_TRIES.toString)
+      }
+    } else if (state == TaskState.TASK_FINISHED) {
+      activeTasks.remove(commonTaskId)
+    } else {
+      logger warn("unhandled task state message {}", state.toString)
     }
   }
 
@@ -62,8 +69,8 @@ class SchedulerActor extends Actor with LazyLogging {
   }
 
 
-  def addNewTask(s: String, id: String) {
-    taskQueue += Tuple2(s, id)
+  def addNewTask(taskDescription: String, baseTaskId: String) {
+    taskQueue += Tuple2(taskDescription, baseTaskId)
   }
 
   def findSuitableTask(offer: Offer): Option[Tuple2[String, String]] = {
@@ -77,7 +84,7 @@ class SchedulerActor extends Actor with LazyLogging {
   def makeNewTaskId(common: String): Option[Tuple2[String, Int]] = {
     val activeTask = activeTasks.get(common)
     if (activeTask.nonEmpty) {
-      val count = activeTask.get._2
+      val count = activeTask.get.tries
       if (count > MAX_TRIES) {
         None
       } else {
@@ -95,8 +102,7 @@ class SchedulerActor extends Actor with LazyLogging {
       val filters = Filters.newBuilder().setRefuseSeconds(1).build()
       driver.launchTasks(Lists.newArrayList(offer.getId), Lists.newArrayList(taskInfo), filters)
 
-      activeTasks += (taskInfo.getTaskId.getValue -> Tuple2(taskInfo, newId._2 + 1))
-      activeTasksBySlaveId += (offer.getSlaveId.getValue -> taskInfo.getTaskId.getValue)
+      activeTasks += (taskInfo.getTaskId.getValue -> TaskDataEntry(taskInfo, newId.get._2 + 1, taskData._1))
       logger info("launching task {}", newId)
     } else {
       driver.declineOffer(offer.getId)

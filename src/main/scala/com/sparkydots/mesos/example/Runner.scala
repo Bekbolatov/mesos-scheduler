@@ -39,6 +39,7 @@ object BasicSchedulerRunner extends App {
     }
   }.start()
 
+  var numTasks = 0
   var ok = true
   while (ok) {
     val ln = StdIn.readLine()
@@ -52,13 +53,14 @@ object BasicSchedulerRunner extends App {
         case "re" =>
           println(tokens)
           if (tokens.length > 1)
-            schedulerActor !  NewTask(tokens(1))
+            schedulerActor !  NewTask(tokens(1), "id" + numTasks)
         case _ =>
           println("_")
       }
     } else {
       println("exiting...")
     }
+    numTasks = numTasks + 1
   }
 
   val status = if (schedulerDriver.stop() == Status.DRIVER_STOPPED) 0 else 1
