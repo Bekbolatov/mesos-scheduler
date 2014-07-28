@@ -1,6 +1,7 @@
 package com.sparkydots.mesos.example
 
 import akka.actor.{ActorSystem, Props}
+import com.sparkydots.mesos.example.ExecutorMessages._
 import com.sparkydots.mesos.framework.executor.ExecutorActor
 import com.sparkydots.mesos.framework.logging.LoggingMesosExecutor
 import org.apache.mesos.Protos._

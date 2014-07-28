@@ -1,26 +1,14 @@
-package com.sparkydots.mesos
+package com.sparkydots.mesos.example
 
-import org.apache.mesos.ExecutorDriver
-import org.apache.mesos.Protos.TaskInfo
+import com.sparkydots.mesos.framework.scheduler.akka.SchedulerOptions
 
 /**
- * Created by renatb on 7/26/14.
+ * Some scheduler startup options
+ * @author Renat Bekbolatov (renatb@sparkydots.com) 7/27/14 2:44 PM
  */
-package object example {
+object SchedulerOptions {
 
-  class SchedulerOptions {
-    val frameworkName = "frameworkName"
-    val actorSystemName = "SchedulerActorSystem"
-    val actorName = "SchedulerActor"
-
-    val masterAddress = "127.0.0.1:5050"
-    val java = "/usr/bin/java"
-    val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
-    val cp = "/Users/renatb/projects/90_scratch/NamesOnMesos/build/libs/NamesOnMesos-1.0.jar"
-    val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
-  }
-
-  object OptionsLocal extends SchedulerOptions {
+  object OptionsLocal extends SchedulerOptions() {
     override val masterAddress = "127.0.0.1:5050"
     override val java = "/usr/bin/java"
     override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
@@ -28,7 +16,7 @@ package object example {
     override val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
   }
 
-  object OptionsLocalScalaExecutor extends SchedulerOptions {
+  object OptionsLocalScalaExecutor extends SchedulerOptions() {
     override val masterAddress = "127.0.0.1:5050"
     override val java = "/usr/bin/java"
     override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
@@ -36,7 +24,7 @@ package object example {
     override val executorRunner = "com.sparkydots.mesos.example.BasicExecutor"
   }
 
-  object OptionsAWS extends SchedulerOptions {
+  object OptionsAWS extends SchedulerOptions() {
     override val masterAddress = "awsserver.vicinitalk.com:5050"
     //zk://awsserver.vicinitalk.com:2181/mesos2
     override val java = "/usr/bin/java"
@@ -45,9 +33,5 @@ package object example {
     override val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
     override val frameworkName = "akkaFrameW"
   }
-
-  abstract class Message
-  case class SimpleMessage(message: String) extends Message
-  case class TaskInfoMessage(driver: ExecutorDriver, taskInfo: TaskInfo) extends Message
 
 }
