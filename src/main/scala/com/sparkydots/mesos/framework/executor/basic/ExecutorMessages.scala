@@ -1,4 +1,4 @@
-package com.sparkydots.mesos.example
+package com.sparkydots.mesos.framework.executor.basic
 
 import org.apache.mesos.ExecutorDriver
 import org.apache.mesos.Protos.TaskInfo

@@ -19,7 +19,7 @@ object CommandlineRunner {
                            executorName: String = "MyExecutor",
                            executorSource: String = "originalSpawn"): ExecutorInfo = {
       val commandInfo = CommandInfo.newBuilder()
-        .setValue(s"${options.java} -Djava.library.path=${options.lib} -classpath ${options.cp} ${options.executorRunner} ${options.masterAddress}")
+        .setValue(s"${options.java} -Djava.library.path=${options.lib} -classpath ${options.cp} ${options.other} ${options.executorRunner} ${options.masterAddress}")
 
       ExecutorInfo.newBuilder()
         .setExecutorId(ExecutorID.newBuilder().setValue(executorId))

@@ -19,9 +19,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-testkit" % "2.3.3",
   "org.scalatest" %% "scalatest" % "2.1.6" % "test",
   "junit" % "junit" % "4.11" % "test",
-  "com.novocode" % "junit-interface" % "0.10" % "test"
+  "com.novocode" % "junit-interface" % "0.10" % "test",
+  "org.scala-sbt" % "launcher-interface" % "0.13.5" % "provided"
 )
 
+resolvers += sbtResolver.value
 
 assemblySettings
 

@@ -1,11 +1,11 @@
-package com.sparkydots.mesos.example
+package com.sparkydots.mesos.framework.executor.basic
 
 import akka.actor.{ActorSystem, Props}
-import com.sparkydots.mesos.example.ExecutorMessages._
+import ExecutorMessages._
 import com.sparkydots.mesos.framework.executor.ExecutorActor
 import com.sparkydots.mesos.framework.logging.LoggingMesosExecutor
+import org.apache.mesos.ExecutorDriver
 import org.apache.mesos.Protos._
-import org.apache.mesos.{ExecutorDriver, MesosExecutorDriver}
 
 class BasicExecutor(poolSize: Int = 5) extends LoggingMesosExecutor {
 
@@ -24,12 +24,3 @@ class BasicExecutor(poolSize: Int = 5) extends LoggingMesosExecutor {
 
 }
 
-
-object BasicExecutor {
-  def main(args: Array[String]) {
-    val mesosExecutorDriver: MesosExecutorDriver = new MesosExecutorDriver(new BasicExecutor)
-    val driverStatus = mesosExecutorDriver.run()
-    val exitStatus = if (driverStatus == Status.DRIVER_STOPPED) 0 else 1
-    System.exit(exitStatus)
-  }
-}

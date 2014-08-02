@@ -1,7 +1,8 @@
 package com.sparkydots.mesos.framework.executor
 
 import akka.actor.Actor
-import com.sparkydots.mesos.example.ExecutorMessages._
+import com.sparkydots.mesos.framework.executor.basic.ExecutorMessages
+import ExecutorMessages._
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.mesos.Protos.{TaskInfo, TaskState, TaskStatus}
 

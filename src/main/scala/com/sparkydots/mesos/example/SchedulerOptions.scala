@@ -6,22 +6,23 @@ import com.sparkydots.mesos.framework.scheduler.akka.SchedulerOptions
  * Some scheduler startup options
  * @author Renat Bekbolatov (renatb@sparkydots.com) 7/27/14 2:44 PM
  */
-object SchedulerOptions {
+object LocalSchedulerOptions {
 
   object OptionsLocal extends SchedulerOptions() {
-    override val masterAddress = "127.0.0.1:5050"
-    override val java = "/usr/bin/java"
-    override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
     override val cp = "/Users/renatb/projects/90_scratch/NamesOnMesos/build/libs/NamesOnMesos-1.0.jar"
     override val executorRunner = "com.sparkydots.mesos.example.BasicExecutorRunner"
   }
 
   object OptionsLocalScalaExecutor extends SchedulerOptions() {
-    override val masterAddress = "127.0.0.1:5050"
-    override val java = "/usr/bin/java"
-    override val lib = "/usr/local/Cellar/mesos/0.19.0/lib"
     override val cp = "/Users/renatb/projects/90_scratch/Bekbolatov/mesos-scheduler/target/scala-2.11/mesos-scheduler-assembly-1.0.jar"
-    override val executorRunner = "com.sparkydots.mesos.example.BasicExecutor"
+    override val executorRunner = "com.sparkydots.mesos.framework.executor.basic.BasicExecutor"
+  }
+
+  object OptionsLocalScalaLauncherExecutor extends SchedulerOptions() {
+    // todo: parametrize
+    override val other = "-Dsbt.boot.properties=/Users/renatb/projects/90_scratch/Bekbolatov/mesos-scheduler/src/main/resources/executor.boot.properties -jar /usr/local/Cellar/sbt/0.13.5/libexec/sbt-launch.jar"
+    override val executorRunner = "com.sparkydots.mesos.framework.executor.basic.BasicExecutor"
+    override def cmdLine(options: SchedulerOptions) = s"${options.java} -Djava.library.path=${options.lib} ${options.other}"
   }
 
   object OptionsAWS extends SchedulerOptions() {
