@@ -1,4 +1,4 @@
 mesos-scheduler
 ===============
 
-Mesos Framework
+In this project, I illustrate how one could interract with Mesos Framework through Akka actors.
